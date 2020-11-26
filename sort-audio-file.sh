@@ -100,7 +100,9 @@ while [ $exit == false ]; do
             find . -name "*.${i,,}" >> path.txt
         done
         echo FOUND:
-        sort path.txt
+        sort path.txt        
+        echo
+        read -p "ENTRER pour continuer" skip
     }
 
     chargerToutFichier(){
@@ -111,6 +113,9 @@ while [ $exit == false ]; do
         done
         echo FOUND:
         sort path.txt
+        
+        echo
+        read -p "ENTRER pour continuer" skip
     }
 
     chargerFichierRepertoireDemande(){
@@ -122,7 +127,9 @@ while [ $exit == false ]; do
             find $dir -name "*.${i,,}" >> path.txt
         done
         echo FOUND:
-        sort path.txt  
+        sort path.txt
+        echo
+        read -p "ENTRER pour continuer" skip
     }
 
     # -----
@@ -195,6 +202,26 @@ while [ $exit == false ]; do
 
 
     # -----
+
+    creerZIP(){
+        zip -r sort.zip delete favorite later
+    }
+
+    extraireZIP(){
+        unzip sort.zip
+    }
+
+    supprimerZIP(){
+        rm sort.zip
+    }
+
+    # -----
+
+    nombreFICHIER(){
+        echo $(cat path.txt | wc -l) fichiers
+    }
+
+    # -----
     # PLUTOT FAIRE UN SWITCH CASE
 
     if [ $action == "0.1" ]; then
@@ -215,8 +242,26 @@ while [ $exit == false ]; do
         lectureAlphabetique
     elif [ $action == "2.2" ]; then
         lectureAleatoire
+        #------------------------------------------------------
+        #------------------------------------------------------
+    elif [ $action = "3.1" ]; then
+        creerZIP
+        echo
+        read -p "ENTRER pour continuer" skip
+    elif [ $action = "3.2" ]; then
+        extraireZIP
+        echo
+        read -p "ENTRER pour continuer" skip
+    elif [ $action = "3.3" ]; then
+        supprimerZIP
+        #------------------------------------------------------
+        #------------------------------------------------------
+    elif [ $action = "4.1" ]; then
+        nombreFICHIER
+        echo
+        read -p "ENTRER pour continuer" skip
     fi   
-
+    
 
     if [ $action == "exit" ]; then
         exit=true;
