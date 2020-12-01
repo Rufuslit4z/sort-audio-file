@@ -2,9 +2,24 @@
 
 # Le but de ce programme est de pouvoir trier ces propres musiques
 
+# --------------------------- #
+#           ATTENTION         #
+# AU PREALABLE, INSTALLER VLC #
+#    apt-get install vlc -y   #
+# --------------------------- #
 
-exit=false
-
+# Booléen permettant de continuer ou arrêter le programme
+# ---------- Reconnaître si le chargement a été effectué avec le choix "0.1"
+# -------------------------- Avec le choix "0.2"
+exit=false ; choix_01=false ; choix_02=false
+# Initialisation du tableau
+# Stocker le nom du répertoire parent charger par l'utilisateur
+# exemple : /home/username/Musique/DISCO /home/username/Musique/ROCK
+#           -> DISCO
+#           -> ROCK
+dirsNAME=()
+# Initialisation du tableau
+# Insertion des extension lisible par VLC
 extensionVLC=("3G2" "3GP" "A52" "AAC" "AC3" "ASF" "ASX" "AVI" "B4S" "BIN"
               "BUP" "CUE" "DAT" "DIVX" "DTS" "DV" "FLAC" "FLV" "GXF" "IFO"
               "M1V" "M2TS" "M2V" "M3U" "M4A" "M4P" "M4V" "MKA" "MKV" "MOD"
@@ -12,34 +27,27 @@ extensionVLC=("3G2" "3GP" "A52" "AAC" "AC3" "ASF" "ASX" "AVI" "B4S" "BIN"
               "MTS" "MXF" "OGG" "OGM" "OMA" "PART" "PLS" "SPX" "SRT" "TS"
               "VLC" "VOB" "WAV" "WMA" "WMV" "XM" "XSPF")
 
-#printf "%s\n" ${extensionVLC[@]}
-
-#for i in ${extensionVLC[@]}; do
-#    echo $i
-#done
-
-while [ $exit == false ]; do
-    
-#    redimension(){
-#        actualColumns=$(tput cols)
-#        if [ columns != $actualColumns ];then
-#            echo variable : $columns
-#            echo colonne du terminal $actualColumns
-#        fi
-#    }
-#
-#    redimension &
-
-    widthMenu=38
+# Tant que $exit = false
+#   Continuer le programme
+#   Si $exit = true
+# Fin du programme
+while [ $exit = false ]; do
+    # 38 étant le nomnbre de "#" présent dans le menu
+    widthMENU=38
+    # Récupérer le nombre de colonnes du terminal
+    # Redimensionner le terminal modifie cette valeur
     columns=$(tput cols)
-
-    let "centerMenu=($columns - $widthMenu)/2"
-
+    # Connaître le nombre qu'il faut de caractère pour ajuter les "#"
+    # Remplir le reste de "-"
+    let "centerMenu=($columns - $widthMENU)/2"
+    # Boucler pour créer la variable contenant les "-" nécessaire au menu
     for i in $(seq 0 $centerMenu)
     do
+        # += -> Lui-même + valeur
         space+="-"
     done
 
+    # Afficher le menu
     echo
     echo
     echo
@@ -56,78 +64,137 @@ while [ $exit == false ]; do
     echo
     echo
 
-
+    # Réinitialiser la variable afin que le positionnement du menu ne soit pas romput
     space=""
-    #echo "extension - Charger votre fichier contenant les extensions"
+
+    # Suite du menu
     echo "0 - Charger les fichiers audio"
-    echo "  0.1 - A partir du répertoire courant"
-    echo "  0.2 - Tout sur l'ordinateur"
-    echo "  0.3 - Celui de votre choix"
+    echo "  0.1 - Chemin absolu      | exemple : \"/home/username/Musique/DISCO\" \"/home/username/Musique/ROCK\""
+    echo "  0.2 - Répertoire courant | exemple : \"DISCO\" \"ROCK\""
     echo
     echo "1 - Gestion des répertoires delete/favorite/later"
     echo "  1.1 - Création"
     echo "  1.2 - Suppression"
     echo
-    echo "2 - Lire les fichiers, trier dans les répertoires (d/f/l)"
+    echo "2 - Lire les fichiers dans un ordre spécifique"
     echo "  2.1 - Ordre alphabétique"
     echo "  2.2 - Aléatoire"
     echo
     echo "3 - Gestion pour un fichier compressé zip"
-    echo "  3.1 - Création du fichier"
+    echo "  3.1 - Création"
     echo "  3.2 - Extraction"
     echo "  3.3 - Suppression"
     echo
     echo "4 - Statistiques"
-    echo "  4.1 - Nombre total"
-    echo "  4.2 - Fichiers triées"
-    echo "  4.3 - Rapport"
     echo
     echo "exit - Quitter le programme"   
     echo
 
-    # METTRE SUR UNE MËME LIGNE
+    # Demander l'action à l'utilisateur
+    # read -> lire
+    #         -p -> ne pas ajouter un passage à la ligne "\n"
     read -p "Action : " action
-   
-    #Détecter et charger tout les fichiers audio à partir de ce répertoire courant
-    #Enregistrer les chemins relatifs (ou absolue)
-    #proposer de charger un endroit spécifique
-    #afficher les extensions détectées
-    #rendre discret ce qui n'est pas trouvé
-    chargerFichierRepertoireCourant(){
-        > path.txt
-        for i in ${extensionVLC[@]}; do
-            find . -name "*.$i" >> path.txt
-            find . -name "*.${i,,}" >> path.txt
-        done
-        echo FOUND:
-        sort path.txt        
-        echo
-        read -p "ENTRER pour continuer" skip
-    }
-
-    chargerToutFichier(){
-        > path.txt
-        for i in ${extensionVLC[@]}; do
-            find ~ -name "*.$i" >> path.txt
-            find ~ -name "*.${i,,}" >> path.txt
-        done
-        echo FOUND:
-        sort path.txt
-        
-        echo
-        read -p "ENTRER pour continuer" skip
-    }
-
-    chargerFichierRepertoireDemande(){
+       
+    chargerFICHIER_chemin_absolu(){
+        # Demander le(s) répertoire(s)
         read -p "Répertoire : " dir
+
+        # Initialisation du tableau
+        dirsABSOLUTE=()
+        
+        # On affiche le chemin absolu
+        # --------- Expression régulière
+        # --------- Remplacer " " par "\n"
+        # --------- "\n" -> retour à la ligne
+        # --------- "/g" -> toutes les occurences
+        # -------------------------- Sauvegarder dans le fichier
+        echo $dir | sed 's/ /\n/g' > tmp
+        
+        # Enregistrer dans le tableau les chemins absolus
+        while read value; do
+            dirsABSOLUTE+=("$value")
+        done < tmp
+
+        # Supprimer le fichier
+        rm tmp
+
+        # Initialisation du tableau
+        dirsNAME=()
+
+        # Afficher le répertoire
+        # --------- Expression régulière
+        # --------- Remplacer tout les " " par "\n"
+        # -------------------------- rev -> reverse
+        # -------------------------- exemple : echo | bonjour | rev -> ruojnob
+        # -------------------------------- On sélectionne le nom du répertoire parent
+        # ------------------------------------------------- Remettre à l'endroit
+        # ------------------------------------------------------- Enregistrer        
+        echo $dir | sed 's/ /\n/g' | rev | cut -d '/' -f1 | rev > tmp
+
+        # Enregistrer le nom des répertoires parents
+        while read value; do
+            dirsNAME+=("$value")
+        done < tmp
+
+        # Supprimer
+        rm tmp
+
+        # Créer OU écraser les données de path.txt
+        > path.txt
+        # Pour toutes les extensions lisibles par VLC
+        for i in ${extensionVLC[@]}; do
+            # Pour tout les chemin absolu
+            for j in ${dirsABSOLUTE[@]}; do
+                # Rechercher les fichiers lisibles
+                find $j -name "*.$i" >> path.txt
+                find $j -name "*.${i,,}" >> path.txt
+            done
+        done
+        echo FOUND:
+        # Lire le fichier trié dans l'ordre alphabétique
+        while read value; do
+            # Pour tout les répertoires parents
+            for i in ${dirsNAME[@]}; do
+                # Supprimer la partie de gauche du répertoire parent et garder la partie de droite
+                # ----------- "." -> un caractère
+                # ----------- "*" -> 0 ou plusieurs
+                # ----------- \(valeur\) -> valeur à garder
+                # ----------- "\1" -> remplacer par la valeur garder
+                # ----------- Pour tout ce qui est avant "$i", on supprime puis on garde "$i" et le reste   
+            echo $value | sed 's/.*\('$i'\)/\1/'    
+            done
+        # Boucler sur une sortie de commande
+        done < <(sort path.txt)
+        echo
+        # Attendre avant de continuer le programme
+        read -p "ENTRER pour continuer" skip
+    }
+
+    chargerFICHIER_repertoire_courant(){
+        # Demander le répertoire        
+        read -p "Répertoire : " dir
+      
+        # Initialiser tableau
+        dirs=()
+        
+              
+        echo "$dir" | sed 's/\"//g' | sed 's/ /\n/g' > tmp        
+        while read value; do
+            dirs+=("$value")
+        done < tmp
+        rm tmp
         
         > path.txt
         for i in ${extensionVLC[@]}; do
-            find $dir -name "*.$i" >> path.txt
-            find $dir -name "*.${i,,}" >> path.txt
+            for j in ${dirs[@]}; do
+                find $j -name "*.$i" >> path.txt
+                find $j -name "*.${i,,}" >> path.txt
+            done        
         done
         echo FOUND:
         sort path.txt
+        echo
+        nombreFICHIER
         echo
         read -p "ENTRER pour continuer" skip
     }
@@ -135,58 +202,98 @@ while [ $exit == false ]; do
     # -----
 
     createDirectory(){
-        if [ ! -d "delete" ]; then
-            mkdir -v delete;
-        fi
-        
-        if [ ! -d "favorite" ]; then
-            mkdir -v favorite;
-        fi
-
-        if [ ! -d "later" ]; then
-            mkdir -v later;
-        fi
+        if [ ! -d "delete" ]  ; then mkdir -v delete;   fi
+        if [ ! -d "favorite" ]; then mkdir -v favorite; fi
+        if [ ! -d "later" ]   ; then mkdir -v later;    fi
     }
 
     deleteDirectory(){
-        if [ -d "delete" ]; then
-            rm -rv delete
-        fi
-
-        if [ -d "favorite" ]; then
-            rm -rv favorite
-        fi
-
-        if [ -d "later" ]; then
-            rm -rv later
-        fi
+        if [ -d "delete" ]  ; then rm -rv delete;   fi
+        if [ -d "favorite" ]; then rm -rv favorite; fi
+        if [ -d "later" ]   ; then rm -rv later;    fi
     }
 
     # ----
 
     choix(){
-        # remplacer par un switch case
-        if [ $1 = "d" ]; then
-            mv "$2" delete
-        elif [ $1 = "f" ]; then
-            mv "$2" favorite
-        elif [ "$1" = "l" ]; then
-            mv "$2" later
-        elif [ $1 = "exit" ]; then
-            echo exit 
-        fi
+        case $1 in 
+            d)
+                # Récréer une erreur, copy bien le fichier
+                # dans le bon répertoire
+                # mais rajoute en plus de ça
+                # le répertoire de base /home/pmarie/......./
+                # dans le choix effectué...
+                
+                if [ $choix_01 = true ]; then
+                    for i in ${dirsNAME[@]}; do
+                        pathFILE=$(cat path.txt | grep "$2" | sed 's/.*\('$i'\)/\1/')
+                        echo                    
+                        echo "EN COURS DE LECTURE : "$pathFILE 1>&2
+                        echo                        
+                        cp -r --parent "$pathFILE" delete/
+                        rm "$pathFILE"
+                    done
+                else
+                    pathFILE=$(cat path.txt | grep "$2")
+                    echo                    
+                    echo "EN COURS DE LECTURE : "$pathFILE 1>&2
+                    echo
+                    cp -r --parent "$pathFILE" delete/
+                    rm "$pathFILE"
+                fi
+                ;;
+            f)
+                if [ $choix_01 = true ]; then
+                    for i in ${dirsNAME[@]}; do
+                        pathFILE=$(cat path.txt | grep "$2" | sed 's/.*\('$i'\)/\1/')
+                        echo                    
+                        echo "EN COURS DE LECTURE : "$pathFILE 1>&2
+                        echo                        
+                        cp -r --parent "$pathFILE" favorite/
+                        rm "$pathFILE"
+                    done
+                else
+                    pathFILE=$(cat path.txt | grep "$2")
+                    echo                    
+                    echo "EN COURS DE LECTURE : "$pathFILE 1>&2
+                    echo
+                    cp -r --parent "$pathFILE" favorite/
+                    rm "$pathFILE"
+                fi
+                ;;
+            l)
+                if [ $choix_01 = true ]; then
+                    for i in ${dirsNAME[@]}; do
+                        pathFILE=$(cat path.txt | grep "$2" | sed 's/.*\('$i'\)/\1/')
+                        echo                    
+                        echo "EN COURS DE LECTURE : "$pathFILE 1>&2
+                        echo                        
+                        cp -r --parent "$pathFILE" later/
+                        rm "$pathFILE"
+                    done
+                else
+                    pathFILE=$(cat path.txt | grep "$2")
+                    echo                    
+                    echo "EN COURS DE LECTURE : "$pathFILE 1>&2
+                    echo
+                    cp -r --parent "$pathFILE" later/
+                    rm "$pathFILE"
+                fi
+                ;;           
+            exit)
+                echo exit
+                ;; 
+        esac
     }
 
     lectureAlphabetique(){
         while read line; do
             vlc "$line"
             read -p "Votre décision d/f/l | exit : " decision </dev/tty
-            if [ $(choix $decision "$line") = "exit" ]; then
+            if [ "$(choix $decision "$line")" = "exit" ]; then
                 break
             fi
         done < <(sort path.txt)
-
-        # AJOUTER DU CODE POUR DEPLACER LE FICHIER DANS LE REPERTOIRE VOULUT
     }
 
     lectureAleatoire(){
@@ -196,8 +303,7 @@ while [ $exit == false ]; do
             if [ $(choix $decision "$line") = "exit" ]; then
                 break
             fi
-        done < <(sort --random-sort path.txt)
-        # AJOUTER DU CODE POUR DEPLACER LE FICHIER DANS LE REPERTOIRE VOULUT
+        done < <(sort -R path.txt)
     }
 
 
@@ -218,53 +324,44 @@ while [ $exit == false ]; do
     # -----
 
     nombreFICHIER(){
-        echo $(cat path.txt | wc -l) fichiers
+        sortedMIN=0 ; sortedMAJ=0
+        for i in ${extensionVLC[@]}; do
+            let "sortedMAJ+=$(ls -R delete   | grep -v '^d' | grep "\.$i" | wc -l) + 
+                            $(ls -R favorite | grep -v '^d' | grep "\.$i" | wc -l) + 
+                            $(ls -R later    | grep -v '^d' | grep "\.$i" | wc -l)"
+            
+            let "sortedMIN+=$(ls -R delete   | grep -v '^d' | grep "\.${i,,}" | wc -l) + 
+                            $(ls -R favorite | grep -v '^d' | grep "\.${i,,}" | wc -l) + 
+                            $(ls -R later    | grep -v '^d' | grep "\.${i,,}" | wc -l)"
+        done
+        let "sorted=$sortedMIN + $sortedMAJ"
+        echo $sorted / $(cat path.txt | wc -l) fichiers triés
     }
 
     # -----
-    # PLUTOT FAIRE UN SWITCH CASE
 
-    if [ $action == "0.1" ]; then
-        chargerFichierRepertoireCourant
-    elif [ $action == "0.2" ]; then
-        chargerToutFichier
-    elif [ $action == "0.3" ]; then
-        chargerFichierRepertoireDemande
-        #------------------------------------------------------
-        #------------------------------------------------------        
-    elif [ $action == "1.1" ]; then
-        createDirectory
-    elif [ $action == "1.2" ]; then
-        deleteDirectory
-        #------------------------------------------------------
-        #------------------------------------------------------
-    elif [ $action == "2.1" ]; then
-        lectureAlphabetique
-    elif [ $action == "2.2" ]; then
-        lectureAleatoire
-        #------------------------------------------------------
-        #------------------------------------------------------
-    elif [ $action = "3.1" ]; then
-        creerZIP
-        echo
-        read -p "ENTRER pour continuer" skip
-    elif [ $action = "3.2" ]; then
-        extraireZIP
-        echo
-        read -p "ENTRER pour continuer" skip
-    elif [ $action = "3.3" ]; then
-        supprimerZIP
-        #------------------------------------------------------
-        #------------------------------------------------------
-    elif [ $action = "4.1" ]; then
-        nombreFICHIER
-        echo
-        read -p "ENTRER pour continuer" skip
-    fi   
-    
-
-    if [ $action == "exit" ]; then
-        exit=true;
-    fi
-
+    case $action in
+        0.1)
+            chargerFICHIER_chemin_absolu ; choix_01=true ; choix_02=false ;;
+        0.2)
+            chargerFICHIER_repertoire_courant ; choix_01=false ; choix_02=true ;;
+        1.1)
+            createDirectory ;;
+        1.2)
+            deleteDirectory ;;
+        2.1)
+            lectureAlphabetique ;;
+        2.2)
+            lectureAleatoire ;;
+        3.1)
+            creerZIP ; echo ; read -p "ENTRER pour continuer" skip ;;
+        3.2)
+            extraireZIP ;;
+        3.3)
+            supprimerZIP ;;
+        4)
+            nombreFICHIER ; echo ; read -p "ENTRER pour continuer" skip ;;
+        exit)
+            exit=true ;;
+    esac
 done
