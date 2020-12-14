@@ -51,7 +51,7 @@ bandeau() {
 
     echo
     echo
-    echo $remplissageSTR $titreBLOCK_01 $remplissageSTR
+    echo "$remplissageSTR $titreBLOCK_01 $remplissageSTR"
     echo
     echo "$remplissageSTR $titreBLOCK_02 $remplissageSTR"
     echo
@@ -59,13 +59,17 @@ bandeau() {
     echo
     echo "$remplissageSTR $titreBLOCK_02 $remplissageSTR"
     echo
-    echo $remplissageSTR $titreBLOCK_01 $remplissageSTR
+    echo "$remplissageSTR $titreBLOCK_01 $remplissageSTR"
     echo
     echo    
 }
 
 menu() {
-    echo "0 - Chemin absolu ; exemple : \"/home/username/Musique/DISCO\" \"/home/username/Musique/ROCK\""
+    echo "Le répertoire dans lequel vous travaillez : " $(pwd) 
+    echo
+    echo "x - Déplacer le programme ; param (\"/home/username/Vidéos/Dr NOZMAN\"/)"
+    echo
+    echo "0 - Charger un chemin absolu ; exemple : \"/home/username/Musique/DISCO\" \"/home/username/Musique/ROCK\""
     echo
     echo "1 - Gestion des répertoires delete/favorite/later"
     echo "  1.1 - Création"
@@ -75,17 +79,27 @@ menu() {
     echo "  2.1 - Ordre alphabétique"
     echo "  2.2 - Aléatoire"
     echo
-    echo "3 - Gestion pour un fichier compressé zip"
-    echo "  3.1 - Création"
-    echo "  3.2 - Extraction"
-    echo "  3.3 - Suppression"
+    echo "3 - Télécharger des fichiers audio"
+    echo "  3.1 - Lister les formats disponible ; param -> [ fichier ] [ URL ]"
+    echo "  3.2 - Lien ; param -> format URL [ /destination ]"
+    echo "  3.3 - Vos playlist Soundcloud ; param -> format fichier /destination"
     echo
-    echo "4 - Statistiques"
+    echo "4 - Gestion pour un fichier compressé zip"
+    echo "  4.1 - Création"
+    echo "  4.2 - Extraction"
+    echo "  4.3 - Suppression"
+    echo
+    echo "5 - Statistiques"
     echo
     echo "help - Notes"
-    echo
     echo "exit - Quitter le programme"   
     echo    
+}
+
+amorce(){
+    # "Amorce : $1 ; Destination : $2"
+    cd "$2"
+    amorce=$(pwd)
 }
 
 viderDIRSname(){
@@ -296,6 +310,66 @@ lecture(){
     fi
 }
 
+skip(){
+    read -p "ENTRER pour continuer " skip;
+}
+
+listerFORMAT(){
+    # "Fichier ou URL : $1"
+    favoriteMARKER='class="playableTile__artworkLink audibleTile__artworkLink"'
+    uploadMARKER="trackItem__trackTitle sc-link-dark sc-font-light"
+    if [ -f "$1" ]; then
+        if [ $(cat "$1" | grep "$favoriteMARKER" | grep -Eo 'https[^\"]+' | wc -l) -ne 0 ]; then
+            while read link; do
+                echo "$link"
+                skip
+                youtube-dl -F "$link"
+            done < <(cat "$1" | grep "$favoriteMARKER" | grep -Eo 'https[^\"]+')        
+        else
+            while read link; do
+                echo "$link"
+                skip
+                youtube-dl -F "$link"
+            done < <(cat "$1" | grep "$uploadMARKER" | grep -Eo "https://soundcloud[^\"]+" | cut -d "?" -f1)
+        fi 
+    else    
+        youtube-dl -F "$1"
+    fi
+}
+
+oneLINK(){
+    # "Amorce : $1 ; Format : $2 ; URL : $3 ; Destination : $4" 
+    if [ ! -d "$4" ]; then mkdir -p "$4"; fi
+    cd "$4"
+    youtube-dl -c -x --audio-format "$2" --audio-format "best" "$3"
+    cd "$1"
+}
+
+ownPLAYLIST(){
+    # "Amorce : $1 ; Format : $2 ; Fichier : $3 ; Destination : $4"        
+    favoriteMARKER='class="playableTile__artworkLink audibleTile__artworkLink"'
+    uploadMARKER="trackItem__trackTitle sc-link-dark sc-font-light"
+    if [ ! -d "$4" ]; then mkdir -p "$4"; fi    
+    if [ $(cat "$3" | grep "$favoriteMARKER" | grep -Eo 'https[^\"]+' | wc -l) -ne 0 ]; then
+        cat "$3" | grep "$favoriteMARKER" | grep -Eo 'https[^\"]+' > "$4/tmp"
+        cd "$4"
+        while read link; do
+            youtube-dl -c -x --audio-format "$2" --audio-format "best" "$link"
+        done < tmp; rm tmp
+        cd "$1"
+    else
+        cat "$3" | grep "$uploadMARKER" | grep -Eo "https://soundcloud[^\"]+" | cut -d "?" -f1 > "$4/tmp"
+        cd "$4"
+        while read link; do
+            echo "$link"
+            skip
+            youtube-dl -c -x --audio-format "$2" --audio-format "best" "$link"
+        done < tmp; rm tmp
+        cd "$1"    
+    fi
+}
+
+
 creerZIP(){
     zip -r sort.zip delete favorite later
 }
@@ -325,43 +399,46 @@ nombreFICHIER(){
 }
 
 needHELP(){
-    echo
-    echo
-    echo
-    cat help.txt
-    echo
-    echo
-    echo
+    :
 }
 
 prgm(){
+    amorce=$(pwd)
     while [ $exit = false ]; do
         bandeau
         menu
         action=$(action)
         case $action in
-            0)
-                chargerFICHIER_chemin_absolu ; choix_01=true ; choix_02=false ;;
-            1.1)
-                createDirectory ;;
-            1.2)
-                deleteDirectory ;;
-            2.1)
-                lecture $action $linkFILE ;;
-            2.2)
-                lecture $action $linkFILE ;;
-            3.1)
-                creerZIP ; echo ; read -p "ENTRER pour continuer" skip ;;
-            3.2)
-                extraireZIP ;;
-            3.3)
-                supprimerZIP ;;
-            4)
-                nombreFICHIER ; echo ; read -p "ENTRER pour continuer" skip ;;
-            help)
-                needHELP ;;
-            exit)
-                exit=true ;;
+            x) read -p "Destination : " destination; amorce $amorce $destination ;;
+            0) chargerFICHIER_chemin_absolu ; choix_01=true ; choix_02=false ;;
+            # ----------------- "            
+            1.1) createDirectory ;;
+            1.2) deleteDirectory ;;
+            # ----------------- "
+            2.1) lecture $action $linkFILE ;;
+            2.2) lecture $action $linkFILE ;;
+            # ----------------- "            
+            3.1) read -p "Fichier ou URL : " fichierOUurl; 
+                 listerFORMAT $fichierOUurl; 
+                 echo ; read -p "ENTRER pour continuer" skip ;;
+            
+            3.2) read -p "Format : " format; read -p "URL : " url; 
+                 read -p "Destination : " destination;
+                 oneLINK $amorce $format $url $destination;;
+
+            3.3) read -p "Format : " format; read -p "Fichier : " fichierHTML; 
+                 read -p "Destination : " destination;
+                 ownPLAYLIST $amorce $format $fichierHTML $destination ;;
+
+            # ----------------- "            
+            4.1) creerZIP ; echo ; read -p "ENTRER pour continuer" skip ;;            
+            4.2) extraireZIP ;;
+            4.3) supprimerZIP ;;
+            # ----------------- "
+            5) nombreFICHIER ; echo ; read -p "ENTRER pour continuer" skip ;;
+            # ----------------- "
+            help) needHELP ;;
+            exit) exit=true ;;
         esac
     done
 }
